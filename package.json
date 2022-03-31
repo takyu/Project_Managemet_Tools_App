@@ -1,0 +1,14 @@
+{
+  "name": "Project_Management_Tools_App",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:takyu/Project_Managemet_Tools_App.git",
+  "author": "takyu <takyu613.study@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "lsv": "lite-server"
+  },
+  "devDependencies": {
+    "lite-server": "^2.6.1"
+  }
+}
