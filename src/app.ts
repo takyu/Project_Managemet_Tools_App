@@ -13,11 +13,9 @@ class Project {
   ) {}
 }
 
-type Listener = (items: Project[]) => void;
+type Listener<T> = (items: T[]) => void;
 
 /**
- * Project State Management
- *
  * グローバルなオブジェクトを定義して、アプリケーションの状態を管理する
  *
  * そしてその状態の変化を監視して、ProjectInput に入力されサブミットされた時、
@@ -27,10 +25,25 @@ type Listener = (items: Project[]) => void;
  * 生成されるステートメントは一つであることを保証したい
  * → シングルトンパターンで実装
  */
-class ProjectState {
-  // 何か状態に変化があった時、実行されるリスナー
-  private listeners: Listener[] = [];
+class State<T> {
+  /**
+   * 何か状態に変化があった時、実行されるリスナー
+   *
+   * listeners のプロパティにつまり、listeners の関数に登録する際の引数の型
+   * を柔軟に持たせたい
+   * → Generics を使用
+   *
+   * また、継承先のクラスでも使えるようにするために、アクセス修飾子を protected に
+   */
+  protected listeners: Listener<T>[] = [];
 
+  addListener(listenerFn: Listener<T>) {
+    this.listeners.push(listenerFn);
+  }
+}
+
+// Project State Management
+class ProjectState extends State<Project> {
   /**
    * 変数をクラスのオブジェクトとして使いたい時に、クラス名を型に書いて宣言できる
    */
@@ -39,7 +52,9 @@ class ProjectState {
   // Singleton
   private static instance: ProjectState;
 
-  private constructor() {}
+  private constructor() {
+    super();
+  }
 
   static getInstance() {
     if (this.instance) {
@@ -49,9 +64,9 @@ class ProjectState {
     return this.instance;
   }
 
-  addListener(listenerFn: Listener) {
-    this.listeners.push(listenerFn);
-  }
+  // addListener(listenerFn: Listener) {
+  //   this.listeners.push(listenerFn);
+  // }
 
   /**
    * ProjectInput クラスからサブミットされて、addProject が実行され、
@@ -158,30 +173,47 @@ function Autobind(_: any, _2: string, descriptor: PropertyDescriptor) {
   return adjDescriptor;
 }
 
-// ProjectInput Class
-class ProjectInput {
+/**
+ * DOM に何かを表示するための共通化クラスの作成
+ */
+// Component Class
+abstract class Component<
+  /**
+   * hostElement に関して、div 以外の ul タグなどもあり得る
+   * また、element もさまざまな型が入ってくることが想定される。
+   * → Generics を使い柔軟に対応できるようにする
+   * また、範囲として全ての HTML タグの親元である、HTMLElement
+   * を指定しておく。
+   */
+  T extends HTMLElement,
+  U extends HTMLElement
+> {
   templateElement: HTMLTemplateElement;
-  hostElement: HTMLDivElement;
-  element: HTMLFormElement;
-  titleInputElement: HTMLInputElement;
-  descriptionInputElement: HTMLInputElement;
-  mandayInputElement: HTMLInputElement;
+  hostElement: T;
+  element: U;
 
   /**
    * コンストラクタ関数では、基本的に要素への参照を定義するのに使う
    * それ以外は、各メソッドに分ける
    */
-  constructor() {
+  constructor(
+    templateId: string,
+    hostElementId: string,
+    insertAtStart: boolean,
+
+    // 任意の引数は常に最後に指定しておく
+    newElementId?: string
+  ) {
     /**
      * <template>
      * #document-fragment
-     * <form>
+     * <hostElement>
      */
     this.templateElement = document.querySelector(
-      '#project-input'
+      templateId
     )! as HTMLTemplateElement;
 
-    this.hostElement = document.querySelector('#app')! as HTMLDivElement;
+    this.hostElement = document.querySelector(hostElementId)! as T;
 
     // this.templateElement に属するノードをクローンする
     const importedNode = document.importNode(
@@ -189,11 +221,37 @@ class ProjectInput {
       true
     );
 
-    // #document-fragment の最初のひとつ目の form を取り出す
-    this.element = importedNode.firstElementChild as HTMLFormElement;
+    // #document-fragment の最初のひとつ目の hostElement を取り出す
+    this.element = importedNode.firstElementChild as U;
 
-    // id を付与しスタイルをつける
-    this.element.id = 'user-input';
+    // id が指定されていたら、id を付与しスタイルをつける
+    if (newElementId) {
+      this.element.id = newElementId;
+    }
+
+    this.attach(insertAtStart);
+  }
+
+  private attach(insertAtBegining: boolean) {
+    this.hostElement.insertAdjacentElement(
+      insertAtBegining ? 'afterbegin' : 'beforeend',
+      this.element
+    );
+  }
+
+  // 継承先のクラスで以下のメソッドを実装することを強制
+  abstract configure(): void;
+  abstract renderContent(): void;
+}
+
+// ProjectInput Class
+class ProjectInput extends Component<HTMLDivElement, HTMLFormElement> {
+  titleInputElement: HTMLInputElement;
+  descriptionInputElement: HTMLInputElement;
+  mandayInputElement: HTMLInputElement;
+
+  constructor() {
+    super('#project-input', '#app', true, 'user-input');
 
     // form のそれぞれの input の参照
     this.titleInputElement = this.element.querySelector(
@@ -207,8 +265,16 @@ class ProjectInput {
     ) as HTMLInputElement;
 
     this.configure();
-    this.attach();
   }
+
+  ////  Public Methods  ////
+  configure() {
+    this.element.addEventListener('submit', this.submitHandler);
+  }
+
+  renderContent() {}
+
+  ////  Private Methods  ////
 
   private gatherUserInput(): [string, string, number] | void {
     // 各フォームの値
@@ -279,26 +345,12 @@ class ProjectInput {
       this.clearInputs();
     }
   }
-
-  private configure() {
-    this.element.addEventListener('submit', this.submitHandler);
-  }
-
-  private attach() {
-    this.hostElement.insertAdjacentElement('afterbegin', this.element);
-  }
 }
 
 // ProjectList Class
-class ProjectList {
-  templateElement: HTMLTemplateElement;
-  hostElement: HTMLDivElement;
-
-  // section の element は無いために、全ての element の継承元である HTMLElement を利用
-  element: HTMLElement;
-
+class ProjectList extends Component<HTMLDivElement, HTMLElement> {
   // project の配列を保存するためのプロパティ
-  assignedProjects: Project[];
+  assignedProjects: Project[] = [];
 
   constructor(
     /**
@@ -309,30 +361,37 @@ class ProjectList {
       | 'active'
       | 'finished' /* 実行中のプロジェクトと終了したプロジェクト */
   ) {
-    this.templateElement = document.querySelector(
-      '#project-list'
-    )! as HTMLTemplateElement;
-    this.hostElement = document.querySelector('#app')! as HTMLDivElement;
+    super(
+      '#project-list',
+      '#app',
+      false,
 
-    /**
-     * 一番初めに、projectList が初期化されるタイミングでは、addListenerされないために初期化
-     * → addListener に監視対象の関数がないため
-     */
-    this.assignedProjects = [];
-
-    const importNode = document.importNode(this.templateElement.content, true);
-
-    this.element = importNode.firstElementChild as HTMLElement;
-
-    this.element.id = `${this.type}-projects`;
-
-    projectState.addListener((projects: Project[]) => {
       /**
-       * アロー関数を使用した場合、呼出時ではなく関数宣言時に this を束縛する
-       * → 2回目以降、すなわち ProjectInput クラスで submit されて、
-       * ProjectStatement クラスの addProject メソッドで呼び出される際も、
-       * この this は、ProjectList クラスのインスタンスオブジェクトで束縛される
+       * `${this.type}-projects` の this は削除する
+       * → super が完了するまで、this は呼び出せない
        */
+      `${type}-projects`
+    );
+
+    // this.assignedProjects = [];
+
+    // Listener イベントを登録する
+    this.configure();
+
+    // section タグの中の要素に id や タイトルを設定していく
+    this.renderContent();
+  }
+
+  ////  Public Methods  ////
+
+  /**
+   * アロー関数を使用した場合、呼出時ではなく関数宣言時に this を束縛する
+   * → 2回目以降、すなわち ProjectInput クラスで submit されて、
+   * ProjectStatement クラスの addProject メソッドで呼び出される際も、
+   * この this は、ProjectList クラスのインスタンスオブジェクトで束縛される
+   */
+  configure() {
+    projectState.addListener((projects: Project[]) => {
       const relevantProjects = projects.filter((prj) => {
         // active でインスタンス化されているオブジェクトの場合
         if (this.type === 'active') {
@@ -346,14 +405,22 @@ class ProjectList {
       this.assignedProjects = relevantProjects;
       this.renderProjects();
     });
-
-    this.attach();
-
-    // section タグの中の要素に id や タイトルを設定していく
-    this.renderContent();
   }
 
-  // project のリストを表示するための関数
+  /**
+   * project のリストを表示するための関数
+   *
+   * private にしておきたいが、abstract で宣言されているメソッドは、
+   * public しか受け付けない
+   */
+  renderContent() {
+    const listId = `${this.type}-projects-list`;
+    (this.element.querySelector('ul')! as HTMLUListElement).id = listId;
+    this.element.querySelector('h2')!.textContent =
+      this.type === 'active' ? '実行中プロジェクト' : '完了プロジェクト';
+  }
+
+  ////  Private Methods  ////
   private renderProjects() {
     const listEl = document.querySelector(
       `#${this.type}-projects-list`
@@ -370,17 +437,6 @@ class ProjectList {
       listItem.textContent = prjItem.title;
       listEl.appendChild(listItem);
     }
-  }
-
-  private renderContent() {
-    const listId = `${this.type}-projects-list`;
-    (this.element.querySelector('ul')! as HTMLUListElement).id = listId;
-    this.element.querySelector('h2')!.textContent =
-      this.type === 'active' ? '実行中プロジェクト' : '完了プロジェクト';
-  }
-
-  private attach() {
-    this.hostElement.insertAdjacentElement('beforeend', this.element);
   }
 }
 
