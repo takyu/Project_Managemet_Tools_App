@@ -5,10 +5,10 @@ enum ProjectStatus {
 }
 class Project {
   constructor(
-    public id: number,
+    public id: string,
     public title: string,
     public description: string,
-    public monday: number,
+    public manday: number,
     public status: ProjectStatus
   ) {}
 }
@@ -74,7 +74,7 @@ class ProjectState extends State<Project> {
    */
   addProject(title: string, description: string, manday: number) {
     const newProject = new Project(
-      this.projects.length + 1,
+      (this.projects.length + 1).toString(),
       title,
       description,
       manday,
@@ -433,9 +433,7 @@ class ProjectList extends Component<HTMLDivElement, HTMLElement> {
     listEl.innerHTML = '';
 
     for (const prjItem of this.assignedProjects) {
-      const listItem = document.createElement('li');
-      listItem.textContent = prjItem.title;
-      listEl.appendChild(listItem);
+      new ProjectItem(`#${listEl.id}`, prjItem);
     }
   }
 }
@@ -444,3 +442,47 @@ const prjInput = new ProjectInput();
 
 const activePrjList = new ProjectList('active');
 const finishedPrjList = new ProjectList('finished');
+
+/**
+ * ProjectItem Class
+ *
+ * ひとつ一つのプロジェクトを、リスト化して表示させるようにするクラス
+ */
+class ProjectItem extends Component<HTMLUListElement, HTMLLIElement> {
+  private project: Project;
+
+  /**
+   * getter
+   *
+   * 関数やメソッド名の上に書くのが一般的
+   */
+  get manday() {
+    if (this.project.manday < 20) {
+      return this.project.manday.toString() + '人日';
+    } else {
+      return (
+        Math.floor(this.project.manday / 20).toString() +
+        '人月' +
+        ' + ' +
+        (this.project.manday % 20).toString() +
+        '人日'
+      );
+    }
+  }
+
+  constructor(hostId: string, project: Project) {
+    super('#single-project', hostId, false, project.id);
+    this.project = project;
+
+    this.configure();
+    this.renderContent();
+  }
+
+  configure(): void {}
+
+  renderContent(): void {
+    this.element.querySelector('h2')!.textContent = this.project.title;
+    this.element.querySelector('h3')!.textContent = this.manday;
+    this.element.querySelector('p')!.textContent = this.project.description;
+  }
+}
