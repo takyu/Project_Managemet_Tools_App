@@ -191,4 +191,49 @@ class ProjectInput {
   }
 }
 
+// ProjectList Class
+class ProjectList {
+  templateElement: HTMLTemplateElement;
+  hostElement: HTMLDivElement;
+
+  // section の element は無いために、全ての element の継承元である HTMLElement を利用
+  element: HTMLElement;
+
+  constructor(
+    private type:
+      | 'active'
+      | 'finished' /* 実行中のプロジェクトと終了したプロジェクト */
+  ) {
+    this.templateElement = document.querySelector(
+      '#project-list'
+    )! as HTMLTemplateElement;
+    this.hostElement = document.querySelector('#app')! as HTMLDivElement;
+
+    const importNode = document.importNode(this.templateElement.content, true);
+
+    this.element = importNode.firstElementChild as HTMLElement;
+
+    this.element.id = `${this.type}-projects`;
+
+    this.attach();
+
+    // section タグの中の要素に id や タイトルを設定していく
+    this.renderContent();
+  }
+
+  private renderContent() {
+    const listId = `${this.type}-projects-list`;
+    (this.element.querySelector('ul')! as HTMLUListElement).id = listId;
+    this.element.querySelector('h2')!.textContent =
+      this.type === 'active' ? '実行中プロジェクト' : '完了プロジェクト';
+  }
+
+  private attach() {
+    this.hostElement.insertAdjacentElement('beforeend', this.element);
+  }
+}
+
 const prjInput = new ProjectInput();
+
+const activePrjList = new ProjectList('active');
+const finishedPrjList = new ProjectList('finished');
