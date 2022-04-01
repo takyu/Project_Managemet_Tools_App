@@ -1,3 +1,19 @@
+// Project Type
+enum ProjectStatus {
+  Active, Finished
+}
+class Project {
+  constructor(
+    public id: number,
+    public title: string,
+    public description: string,
+    public monday: number,
+    public status: ProjectStatus
+  ) {}
+}
+
+type Listener = (items: Project[]) => void;
+
 /**
  * Project State Management
  *
@@ -12,9 +28,12 @@
  */
 class ProjectState {
   // 何か状態に変化があった時、実行されるリスナー
-  private listeners: any[] = [];
+  private listeners: Listener[] = [];
 
-  private projects: any[] = [];
+  /**
+   * 変数をクラスのオブジェクトとして使いたい時に、クラス名を型に書いて宣言できる
+   */
+  private projects: Project[] = [];
 
   // Singleton
   private static instance: ProjectState;
@@ -29,7 +48,7 @@ class ProjectState {
     return this.instance;
   }
 
-  addListener(listenerFn: Function) {
+  addListener(listenerFn: Listener) {
     this.listeners.push(listenerFn);
   }
 
@@ -38,12 +57,13 @@ class ProjectState {
    * その後、ProjectList クラスの実行中プロジェクトに挿入したい
    */
   addProject(title: string, description: string, manday: number) {
-    const newProject = {
-      id: Math.random().toString(),
-      title: title,
-      description: description,
-      manday: manday,
-    };
+    const newProject = new Project(
+      this.projects.length + 1,
+      title,
+      description,
+      manday,
+      ProjectStatus.Active
+    );
     this.projects.push(newProject);
 
     /**
@@ -277,7 +297,7 @@ class ProjectList {
   element: HTMLElement;
 
   // project の配列を保存するためのプロパティ
-  assignedProjects: any[];
+  assignedProjects: Project[];
 
   constructor(
     private type:
@@ -301,8 +321,7 @@ class ProjectList {
 
     this.element.id = `${this.type}-projects`;
 
-    projectState.addListener((projects: any[]) => {
-
+    projectState.addListener((projects: Project[]) => {
       /**
        * アロー関数を使用した場合、呼出時ではなく関数宣言時に this を束縛する
        * → 2回目以降、すなわち ProjectInput クラスで submit されて、
