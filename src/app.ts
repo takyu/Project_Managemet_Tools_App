@@ -1,6 +1,7 @@
 // Project Type
 enum ProjectStatus {
-  Active, Finished
+  Active,
+  Finished,
 }
 class Project {
   constructor(
@@ -300,6 +301,10 @@ class ProjectList {
   assignedProjects: Project[];
 
   constructor(
+    /**
+     * enum で projectStatus の状態を定義したが、ここのコンストラクタ関数内で、
+     * id にステータスの文字列が使われているために、あえて文字列で書いておく
+     */
     private type:
       | 'active'
       | 'finished' /* 実行中のプロジェクトと終了したプロジェクト */
@@ -328,7 +333,17 @@ class ProjectList {
        * ProjectStatement クラスの addProject メソッドで呼び出される際も、
        * この this は、ProjectList クラスのインスタンスオブジェクトで束縛される
        */
-      this.assignedProjects = projects;
+      const relevantProjects = projects.filter((prj) => {
+        // active でインスタンス化されているオブジェクトの場合
+        if (this.type === 'active') {
+          // prjの中で、active だけのものを返す
+          return prj.status === ProjectStatus.Active;
+        }
+        // finished でインスタンス化されているオブジェクトの場合
+        // prjの中で、finished だけのものを返す
+        return prj.status === ProjectStatus.Finished;
+      });
+      this.assignedProjects = relevantProjects;
       this.renderProjects();
     });
 
@@ -343,6 +358,13 @@ class ProjectList {
     const listEl = document.querySelector(
       `#${this.type}-projects-list`
     )! as HTMLUListElement;
+
+    /**
+     * for 文でプロジェクトの一覧を毎回描写しているために、
+     * 既に描画されているプロジェクトを一旦削除する。
+     */
+    listEl.innerHTML = '';
+
     for (const prjItem of this.assignedProjects) {
       const listItem = document.createElement('li');
       listItem.textContent = prjItem.title;
