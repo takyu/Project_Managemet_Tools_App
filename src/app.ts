@@ -1,3 +1,72 @@
+/**
+ * Project State Management
+ *
+ * グローバルなオブジェクトを定義して、アプリケーションの状態を管理する
+ *
+ * そしてその状態の変化を監視して、ProjectInput に入力されサブミットされた時、
+ * ProjectList にプロジェクトを挿入したりする。
+ *
+ * アプリケーション全体の状態を管理するために、
+ * 生成されるステートメントは一つであることを保証したい
+ * → シングルトンパターンで実装
+ */
+class ProjectState {
+  // 何か状態に変化があった時、実行されるリスナー
+  private listeners: any[] = [];
+
+  private projects: any[] = [];
+
+  // Singleton
+  private static instance: ProjectState;
+
+  private constructor() {}
+
+  static getInstance() {
+    if (this.instance) {
+      return this.instance;
+    }
+    this.instance = new ProjectState();
+    return this.instance;
+  }
+
+  addListener(listenerFn: Function) {
+    this.listeners.push(listenerFn);
+  }
+
+  /**
+   * ProjectInput クラスからサブミットされて、addProject が実行され、
+   * その後、ProjectList クラスの実行中プロジェクトに挿入したい
+   */
+  addProject(title: string, description: string, manday: number) {
+    const newProject = {
+      id: Math.random().toString(),
+      title: title,
+      description: description,
+      manday: manday,
+    };
+    this.projects.push(newProject);
+
+    /**
+     * 追加後に listener 関数を一通り実行
+     *
+     * 初回読み込み時に、projectList クラスのコンストラクタ関数において、
+     * projectList の assignedProjects[] にオブジェクトの参照がコピーされ
+     * それを描写するメソッドを実行する関数が登録されている。
+     * なお、ここでは、実行中プロジェクトと、完了プロジェクトの二つがインスタンス化
+     * されているために、2回繰り返される
+     */
+    for (const listenerFn of this.listeners) {
+      /**
+       * projects のコピーを渡す。
+       * → Listener 関数の方で、project の中身を編集したりすることが無いようにするため
+       */
+      listenerFn(this.projects.slice());
+    }
+  }
+}
+
+const projectState = ProjectState.getInstance();
+
 // Validation
 type Validatable = {
   value: string | number;
@@ -163,6 +232,11 @@ class ProjectInput {
   private clearInputs() {
     this.titleInputElement.value = '';
     this.descriptionInputElement.value = '';
+
+    /**
+     * number の型であっても、value には、string 型として入っているので、
+     * から文字を設定してあげることで空欄に
+     */
     this.mandayInputElement.value = '';
   }
 
@@ -174,10 +248,13 @@ class ProjectInput {
     const userInput = this.gatherUserInput();
 
     if (Array.isArray(userInput)) {
+      // 各要素を、各変数に挿入
       const [title, description, manday] = userInput;
-      console.log(title);
-      console.log(description);
-      console.log(manday);
+
+      // グローバルステートメントに挿入
+      projectState.addProject(title, description, manday);
+
+      // submit 後の各フォームを空欄にする
       this.clearInputs();
     }
   }
@@ -199,6 +276,9 @@ class ProjectList {
   // section の element は無いために、全ての element の継承元である HTMLElement を利用
   element: HTMLElement;
 
+  // project の配列を保存するためのプロパティ
+  assignedProjects: any[];
+
   constructor(
     private type:
       | 'active'
@@ -209,16 +289,46 @@ class ProjectList {
     )! as HTMLTemplateElement;
     this.hostElement = document.querySelector('#app')! as HTMLDivElement;
 
+    /**
+     * 一番初めに、projectList が初期化されるタイミングでは、addListenerされないために初期化
+     * → addListener に監視対象の関数がないため
+     */
+    this.assignedProjects = [];
+
     const importNode = document.importNode(this.templateElement.content, true);
 
     this.element = importNode.firstElementChild as HTMLElement;
 
     this.element.id = `${this.type}-projects`;
 
+    projectState.addListener((projects: any[]) => {
+
+      /**
+       * アロー関数を使用した場合、呼出時ではなく関数宣言時に this を束縛する
+       * → 2回目以降、すなわち ProjectInput クラスで submit されて、
+       * ProjectStatement クラスの addProject メソッドで呼び出される際も、
+       * この this は、ProjectList クラスのインスタンスオブジェクトで束縛される
+       */
+      this.assignedProjects = projects;
+      this.renderProjects();
+    });
+
     this.attach();
 
     // section タグの中の要素に id や タイトルを設定していく
     this.renderContent();
+  }
+
+  // project のリストを表示するための関数
+  private renderProjects() {
+    const listEl = document.querySelector(
+      `#${this.type}-projects-list`
+    )! as HTMLUListElement;
+    for (const prjItem of this.assignedProjects) {
+      const listItem = document.createElement('li');
+      listItem.textContent = prjItem.title;
+      listEl.appendChild(listItem);
+    }
   }
 
   private renderContent() {
