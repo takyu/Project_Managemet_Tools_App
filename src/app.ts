@@ -14,11 +14,7 @@ interface Draggable {
    *
    * ここでは、ProjectItem
    */
-
-  // drag 開始時に発火する
   dragStartHandler(event: DragEvent): void;
-
-  // drag 終了時に発火する
   dragEndHandler(event: DragEvent): void;
 }
 
@@ -125,6 +121,30 @@ class ProjectState extends State<Project> {
      * なお、ここでは、実行中プロジェクトと、完了プロジェクトの二つがインスタンス化
      * されているために、2回繰り返される
      */
+    this.updateListeners();
+  }
+
+  /**
+   * 実際に移動された時は、該当 id のプロジェクトのステータスを変更
+   */
+  moveProject(projectId: string, newStatus: ProjectStatus) {
+    const project = this.projects.find((prj) => prj.id === projectId);
+
+    if (
+      project &&
+      project.status !== newStatus /* statusが変わっている時だけ実行 */
+    ) {
+      project.status = newStatus;
+
+      /**
+       * project の要素が変更されたので、再度 Listener を呼び出して、
+       * 画面を再描画させる
+       */
+      this.updateListeners();
+    }
+  }
+
+  private updateListeners() {
     for (const listenerFn of this.listeners) {
       /**
        * projects のコピーを渡す。
@@ -464,14 +484,55 @@ class ProjectList
       this.type === 'active' ? '実行中プロジェクト' : '完了プロジェクト';
   }
 
+  /**
+   * js で drag & drop を実装するための必須の項目
+   *
+   * drag & drop をしているときに、その場所が有効な drop 対象かどうかを
+   * ブラウザに伝えるためのイベントハンドラー
+   */
   @Autobind
-  dragOverHandler(_: DragEvent): void {
-    const listEl = this.element.querySelector('ul')! as HTMLUListElement;
-    listEl.classList.add('droppable');
+  dragOverHandler(event: DragEvent): void {
+    if (event.dataTransfer && event.dataTransfer.types[0] === 'text/plain') {
+      /**
+       * デフォルトの drag & drop は、js では許可されない
+       * → ゆえに、ProjectList のセクション の上に drop したい時は、
+       * 許可されないのを妨げる → dropを許可するといった事をする。
+       *
+       * これをしない場合は、drop ハンドラーが呼び出されない
+       */
+      event.preventDefault();
+
+      // ul タグにスタイルのクラスを追加
+      const listEl = this.element.querySelector('ul')! as HTMLUListElement;
+      listEl.classList.add('droppable');
+    }
   }
 
-  dropHandler(_: DragEvent): void {}
+  /**
+   * 実際に drop された時のイベントを扱うハンドラー
+   *
+   * dragOverHandler が drop を許可すると、最終的にこのイベントハンドラーが呼ばれる
+   * ここで、データの更新や画面の更新が行われる
+   */
+  @Autobind
+  dropHandler(event: DragEvent): void {
+    // drag した時に、dragStartHandler によって持ち出されているデータ（ここでは、id）を取得
+    const prjId = event.dataTransfer!.getData('text/plain');
 
+    // dropされたときに、project のデータを変更し、再描画（moveProject）
+    projectState.moveProject(
+      prjId,
+
+      // drop 先のタイプを参照 (this.type)
+      this.type === 'active' ? ProjectStatus.Active : ProjectStatus.Finished
+    );
+  }
+
+  /**
+   * ビジュアル上のフィードバックを扱うイベントハンドラー
+   *
+   * drag & drop 終了後にビジュアル上の変更を適用することができる
+   */
   @Autobind
   dragLeaveHandler(_: DragEvent): void {
     const listEl = this.element.querySelector('ul')! as HTMLUListElement;
@@ -550,11 +611,17 @@ class ProjectItem
     this.element.querySelector('p')!.textContent = this.project.description;
   }
 
+  // drag 開始時に発火する
   @Autobind
   dragStartHandler(event: DragEvent): void {
-    console.log(event);
+    // drag イベントでデータを転送するためのプロパティ
+    event.dataTransfer!.setData('text/plain', this.project.id);
+
+    // 対象から対象へ移動させる事をブラウザ側に伝えている
+    event.dataTransfer!.effectAllowed = 'move';
   }
 
+  // drag 終了時に発火する
   dragEndHandler(_: DragEvent): void {
     console.log('finished drag');
   }
