@@ -1,3 +1,37 @@
+/**
+ * Drag & Drop での実装
+ *
+ * ・ Drag して要素を移動させる
+ * ・移動させた後、裏側でデータを変える
+ *
+ * この2点を実装する。
+ */
+
+// Drag & Drop
+interface Draggable {
+  /**
+   * 移動させる対象
+   *
+   * ここでは、ProjectItem
+   */
+
+  // drag 開始時に発火する
+  dragStartHandler(event: DragEvent): void;
+
+  // drag 終了時に発火する
+  dragEndHandler(event: DragEvent): void;
+}
+
+interface DragTarget {
+  /**
+   * 移動先の対象
+   *
+   * ここでは、ProjectList
+   */
+  dragOverHandler(event: DragEvent): void;
+  dropHandler(event: DragEvent): void;
+  dragLeaveHandler(event: DragEvent): void;
+}
 // Project Type
 enum ProjectStatus {
   Active,
@@ -348,7 +382,10 @@ class ProjectInput extends Component<HTMLDivElement, HTMLFormElement> {
 }
 
 // ProjectList Class
-class ProjectList extends Component<HTMLDivElement, HTMLElement> {
+class ProjectList
+  extends Component<HTMLDivElement, HTMLElement>
+  implements DragTarget
+{
   // project の配列を保存するためのプロパティ
   assignedProjects: Project[] = [];
 
@@ -375,7 +412,10 @@ class ProjectList extends Component<HTMLDivElement, HTMLElement> {
 
     // this.assignedProjects = [];
 
-    // Listener イベントを登録する
+    /**
+     * 1. drag イベントを監視する
+     * 2. Listener イベントを登録する
+     */
     this.configure();
 
     // section タグの中の要素に id や タイトルを設定していく
@@ -391,6 +431,10 @@ class ProjectList extends Component<HTMLDivElement, HTMLElement> {
    * この this は、ProjectList クラスのインスタンスオブジェクトで束縛される
    */
   configure() {
+    this.element.addEventListener('dragover', this.dragOverHandler);
+    this.element.addEventListener('drop', this.dropHandler);
+    this.element.addEventListener('dragleave', this.dragLeaveHandler);
+
     projectState.addListener((projects: Project[]) => {
       const relevantProjects = projects.filter((prj) => {
         // active でインスタンス化されているオブジェクトの場合
@@ -418,6 +462,20 @@ class ProjectList extends Component<HTMLDivElement, HTMLElement> {
     (this.element.querySelector('ul')! as HTMLUListElement).id = listId;
     this.element.querySelector('h2')!.textContent =
       this.type === 'active' ? '実行中プロジェクト' : '完了プロジェクト';
+  }
+
+  @Autobind
+  dragOverHandler(_: DragEvent): void {
+    const listEl = this.element.querySelector('ul')! as HTMLUListElement;
+    listEl.classList.add('droppable');
+  }
+
+  dropHandler(_: DragEvent): void {}
+
+  @Autobind
+  dragLeaveHandler(_: DragEvent): void {
+    const listEl = this.element.querySelector('ul')! as HTMLUListElement;
+    listEl.classList.remove('droppable');
   }
 
   ////  Private Methods  ////
@@ -448,7 +506,10 @@ const finishedPrjList = new ProjectList('finished');
  *
  * ひとつ一つのプロジェクトを、リスト化して表示させるようにするクラス
  */
-class ProjectItem extends Component<HTMLUListElement, HTMLLIElement> {
+class ProjectItem
+  extends Component<HTMLUListElement, HTMLLIElement>
+  implements Draggable
+{
   private project: Project;
 
   /**
@@ -478,11 +539,23 @@ class ProjectItem extends Component<HTMLUListElement, HTMLLIElement> {
     this.renderContent();
   }
 
-  configure(): void {}
+  configure(): void {
+    this.element.addEventListener('dragstart', this.dragStartHandler);
+    this.element.addEventListener('dragend', this.dragEndHandler);
+  }
 
   renderContent(): void {
     this.element.querySelector('h2')!.textContent = this.project.title;
     this.element.querySelector('h3')!.textContent = this.manday;
     this.element.querySelector('p')!.textContent = this.project.description;
+  }
+
+  @Autobind
+  dragStartHandler(event: DragEvent): void {
+    console.log(event);
+  }
+
+  dragEndHandler(_: DragEvent): void {
+    console.log('finished drag');
   }
 }
