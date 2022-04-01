@@ -1,9 +1,5 @@
 // autobind decorator
-function Autobind(
-  _: any,
-  _2: string,
-  descriptor: PropertyDescriptor
-) {
+function Autobind(_: any, _2: string, descriptor: PropertyDescriptor) {
   const originalMethod = descriptor.value;
   const adjDescriptor: PropertyDescriptor = {
     configurable: true,
@@ -66,12 +62,47 @@ class ProjectInput {
     this.attach();
   }
 
+  private gatherUserInput(): [string, string, number] | void {
+    const enteredTitle = this.titleInputElement.value;
+    const enteredDescription = this.descriptionInputElement.value;
+    const enteredManday = this.mandayInputElement.value;
+
+    if (
+      enteredTitle.trim().length === 0 ||
+      enteredDescription.trim().length === 0 ||
+      enteredManday.trim().length === 0
+    ) {
+      alert('入力値が正しくありません。再度入力してください。');
+      return;
+    } else {
+      return [
+        enteredTitle,
+        enteredDescription,
+        parseFloat(enteredManday) /* もしくは、+enteredManday */,
+      ];
+    }
+  }
+
+  private clearInputs() {
+    this.titleInputElement.value = '';
+    this.descriptionInputElement.value = '';
+    this.mandayInputElement.value = '';
+  }
+
   @Autobind
   private submitHandler(e: Event) {
     // HTTP request が送られないようにする。
     e.preventDefault();
 
-    console.log(this.titleInputElement.value);
+    const userInput = this.gatherUserInput();
+
+    if (Array.isArray(userInput)) {
+      const [title, description, manday] = userInput;
+      console.log(title);
+      console.log(description);
+      console.log(manday);
+      this.clearInputs();
+    }
   }
 
   private configure() {
