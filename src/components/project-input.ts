@@ -1,12 +1,15 @@
-import { BaseComponent } from './base-component.js';
-import { Validatable, validate } from '../utils/validation.js';
-import { Autobind } from '../decorators/autobind.js';
+// export default されたものは、そのまま別名をつける
+import Cmp from './base-component.js';
+
+// 別名をつけて一つのオブジェクトとしてインポート
+import * as Validation from '../utils/validation.js';
+
+// オブジェクトの中でも、このファイルで使いたい別名を定義できる
+import { Autobind as AutoBind } from '../decorators/autobind.js';
+
 import { projectState } from '../state/project-state.js';
 // ProjectInput Class
-export class ProjectInput extends BaseComponent<
-  HTMLDivElement,
-  HTMLFormElement
-> {
+export class ProjectInput extends Cmp<HTMLDivElement, HTMLFormElement> {
   titleInputElement: HTMLInputElement;
   descriptionInputElement: HTMLInputElement;
   mandayInputElement: HTMLInputElement;
@@ -44,16 +47,16 @@ export class ProjectInput extends BaseComponent<
     const enteredManday = this.mandayInputElement.value;
 
     // 各フォームの値とチェックの設定を合わせたオブジェクト
-    const titleValidatable: Validatable = {
+    const titleValidatable: Validation.Validatable = {
       value: enteredTitle,
       required: true,
     };
-    const descriptionValidatable: Validatable = {
+    const descriptionValidatable: Validation.Validatable = {
       value: enteredDescription,
       required: true,
       minLength: 10,
     };
-    const MandayValidatable: Validatable = {
+    const MandayValidatable: Validation.Validatable = {
       value: +enteredManday,
       required: true,
       min: 1,
@@ -62,9 +65,9 @@ export class ProjectInput extends BaseComponent<
 
     // バリデーション
     if (
-      !validate(titleValidatable) ||
-      !validate(descriptionValidatable) ||
-      !validate(MandayValidatable)
+      !Validation.validate(titleValidatable) ||
+      !Validation.validate(descriptionValidatable) ||
+      !Validation.validate(MandayValidatable)
     ) {
       alert('入力値が正しくありません。再度入力してください。');
       return;
@@ -88,7 +91,7 @@ export class ProjectInput extends BaseComponent<
     this.mandayInputElement.value = '';
   }
 
-  @Autobind
+  @AutoBind
   private submitHandler(e: Event) {
     // HTTP request が送られないようにする。
     e.preventDefault();

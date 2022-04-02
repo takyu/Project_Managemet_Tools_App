@@ -114,3 +114,9 @@ export class ProjectState extends State<Project> {
 }
 
 export const projectState = ProjectState.getInstance();
+
+/**
+ * このファイルは複数回呼ばれているが、何回呼ばれても
+ * 読み込まれるのは一度のみである。
+ */
+console.log('executing...');

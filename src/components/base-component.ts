@@ -2,7 +2,17 @@
  * DOM に何かを表示するための共通化クラスの作成
  */
 // Component Class
-export abstract class BaseComponent<
+
+/**
+ * export default
+ *
+ * 一つのファイルにつき一つの export default を宣言できる。
+ * import 先で別名をそのまま定義することで、オブジェクトを書く必要が無くなる
+ *
+ * また、export default しても、別のオブジェクトやタイプ、クラスなどを同一ファイル
+ * でエクスポート可能
+ */
+export default abstract class BaseComponent<
   /**
    * hostElement に関して、div 以外の ul タグなどもあり得る
    * また、element もさまざまな型が入ってくることが想定される。

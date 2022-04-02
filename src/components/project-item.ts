@@ -1,4 +1,4 @@
-import { BaseComponent } from '../components/base-component.js';
+import Component from '../components/base-component.js';
 import { Project } from '../models/project.js';
 import { Autobind } from '../decorators/autobind.js';
 import { Draggable } from '../models/drag-drop.js';
@@ -9,7 +9,7 @@ import { Draggable } from '../models/drag-drop.js';
  * ひとつ一つのプロジェクトを、リスト化して表示させるようにするクラス
  */
 export class ProjectItem
-  extends BaseComponent<HTMLUListElement, HTMLLIElement>
+  extends Component<HTMLUListElement, HTMLLIElement>
   implements Draggable
 {
   /* namespace_name.object( or interface ) */

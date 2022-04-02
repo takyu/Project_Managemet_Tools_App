@@ -1,4 +1,4 @@
-import { BaseComponent } from '../components/base-component.js';
+import Component from '../components/base-component.js';
 import { DragTarget } from '../models/drag-drop.js';
 import { Project, ProjectStatus } from '../models/project.js';
 import { projectState } from '../state/project-state.js';
@@ -6,7 +6,7 @@ import { Autobind } from '../decorators/autobind.js';
 import { ProjectItem } from './project-item.js';
 // ProjectList Class
 export class ProjectList
-  extends BaseComponent<HTMLDivElement, HTMLElement>
+  extends Component<HTMLDivElement, HTMLElement>
   implements DragTarget
 {
   // project の配列を保存するためのプロパティ
