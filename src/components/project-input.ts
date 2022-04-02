@@ -1,13 +1,13 @@
 // export default されたものは、そのまま別名をつける
-import Cmp from './base-component.js';
+import Cmp from './base-component';
 
 // 別名をつけて一つのオブジェクトとしてインポート
-import * as Validation from '../utils/validation.js';
+import * as Validation from '../utils/validation';
 
 // オブジェクトの中でも、このファイルで使いたい別名を定義できる
-import { Autobind as AutoBind } from '../decorators/autobind.js';
+import { Autobind as AutoBind } from '../decorators/autobind';
 
-import { projectState } from '../state/project-state.js';
+import { projectState } from '../state/project-state';
 // ProjectInput Class
 export class ProjectInput extends Cmp<HTMLDivElement, HTMLFormElement> {
   titleInputElement: HTMLInputElement;

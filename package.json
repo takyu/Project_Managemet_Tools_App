@@ -6,9 +6,18 @@
   "author": "takyu <takyu613.study@gmail.com>",
   "license": "MIT",
   "scripts": {
-    "lsv": "lite-server"
+    "start": "webpack serve --color --progress",
+    "prod": "webpack --color --progress --config webpack.config.prod.js",
+    "dev": "webpack --color --progress",
+    "watch": "webpack --watch --color --progress"
   },
   "devDependencies": {
-    "lite-server": "^2.6.1"
+    "clean-webpack-plugin": "^4.0.0",
+    "lite-server": "^2.6.1",
+    "ts-loader": "^9.2.8",
+    "typescript": "^4.6.3",
+    "webpack": "^5.71.0",
+    "webpack-cli": "^4.9.2",
+    "webpack-dev-server": "^4.7.4"
   }
 }
