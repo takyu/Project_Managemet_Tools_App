@@ -1,51 +1,25 @@
 /**
- * triple slash directive
+ * ES Modules
  *
- * ts がファイル間の依存関係を宣言するために使う
- * ファイルの先頭で必ず宣言されなければならない。
+ * import {} from 'file_path'
  *
- * 使う際は、namespace_name.object_name ( interface_name )
- * と使う。
+ * 「namespace の問題点」
  *
- * 別ファイルに切り出しても、名前空間を統一すれば、ドット表記で指定しなくても
- * 書けるようにはなる。
+ *・人力で全てのファイルに依存関係を書かなければならない。
  *
- * また、依存関係を解決するために、各ファイルの上に使った外部からの参照ファイルを
- * 個別に記述する。
+ *・他ファイルで依存関係の記入ミスがあったとしても、コンパイラがエラーを示さないので、
+ * ランタイムエラーの潜在性を秘めている。
+ *
+ * → ES6から導入された ES Modules を使えば、これらの問題を解決することができる。
+ *
+ * また、import する際のファイルパスに対して、Webpack やビルドツールなどを用いれば、
+ * 拡張子を書かなくても良いが、ブラウザ側で ESModule のファイルを import する場合は、
+ * 拡張子をつけなければならない。
  */
+import { ProjectInput } from './components/project-input.js';
+import { ProjectList } from './components/project-list.js';
 
-/**
- * models
- */
-/// <reference path="models/drag-drop.ts"/>
-/// <reference path="models/project.ts"/>
+const prjInput = new ProjectInput();
 
-/**
- * state
- */
-/// <reference path="state/project-state.ts"/>
-
-/**
- * utils
- */
-/// <reference path="utils/validation.ts"/>
-
-/**
- * decorators
- */
-/// <reference path="decorators/autobind.ts"/>
-
-/**
- * components ( namespace: App )
- */
-/// <reference path="components/base-component.ts" />
-/// <reference path="components/project-input.ts" />
-/// <reference path="components/project-list.ts" />
-/// <reference path="components/project-item.ts" />
-
-namespace App {
-  const prjInput = new Components.ProjectInput();
-
-  const activePrjList = new Components.ProjectList('active');
-  const finishedPrjList = new Components.ProjectList('finished');
-}
+const activePrjList = new ProjectList('active');
+const finishedPrjList = new ProjectList('finished');
